@@ -8,7 +8,7 @@ import jrobots.utils.ProximityScan;
 import jrobots.utils.SonarTrace;
 import jrobots.utils.Vector;
 
-public class Error404 extends JRobot2015_3 {
+public class Error404 extends JRobot2015_3{	
   private static final long serialVersionUID = 1L;
   
   private SonarTrace[] st = new SonarTrace[3];
@@ -28,9 +28,8 @@ public class Error404 extends JRobot2015_3 {
   
   private int haufigkeitRakete = 70; //100 ca. Energie 1;
   private boolean fire = true;
-  //private int RaketenAusweichenWinkel = 45;
   private int BoosterAbstandRakete = 40;
-  private double BoosterAbEnergieBenutzen = 0.40;
+  //private double BoosterAbEnergieBenutzen = 0.40;
   
   private double lastHealth = 100;
   
@@ -39,7 +38,7 @@ public class Error404 extends JRobot2015_3 {
   private Vector lastTarget = null;
   
   //DO NOT CHANGE
-  private boolean areWeFire = false;
+  //private boolean areWeFire = false;
   
   public Error404() {    
     c.add(Color.black);
@@ -72,13 +71,13 @@ public class Error404 extends JRobot2015_3 {
     
     drawDebug();
     
-    areWeFire = false;
+    //areWeFire = false;
   }
   
   private void LebenRetten(){
 	  if(this.getHealth() <= lastHealth - 10){
 		  BoosterAbstandRakete += 1;
-		  BoosterAbEnergieBenutzen -= 0.02;
+		  //BoosterAbEnergieBenutzen -= 0.02;
 		  
 		  lastHealth = this.getHealth();
 	  }
@@ -86,15 +85,19 @@ public class Error404 extends JRobot2015_3 {
   
   private void scanning(){
 	  inter++;
-	  if (inter % scanAbstand == 0 && this.getEnergy() >= 0.3D * getEnergyConsumptionProjectile()) {
-	      this.setSonarEnergy(0.3D * getEnergyConsumptionProjectile());
+	  if (inter % scanAbstand == 0 && this.getEnergy() >= 0.1) {
+	      this.setSonarEnergy(0.1);
 	  }
 	  
 	  if(oldPS != null){
 		  oldPS2 = oldPS;
 	  }
-	   
-	  this.oldPS = this.getProjectileRadar();
+	  
+	  if(oldPS != null && this.oldPS.timeOfScan <= this.getTime() - 15){
+		  this.oldPS = this.getProjectileRadar();
+	  }else if(this.getProjectileRadar() != null){
+		  this.oldPS = this.getProjectileRadar();
+	  }
 	  
 	  if (st[0] != this.getLastSonarTrace()) {
 		  st[2] = st[1];
@@ -111,64 +114,36 @@ public class Error404 extends JRobot2015_3 {
 		  double distance = st[0].location.distanceTo(this.getPosition());
 		  
 		  if((haufigkeitRakete <= fireaktuell || distance <= minimalabstand) && fire == true){
-		      if(st[0] != null && st[1] != null && st[2] != null && st[0].location.distanceTo(this.getPosition()) <= schiessenAbAbstand || this.getEnergy() >= ImmerSchiessenAbEnergie){
-		    	  double x1 = st[0].location.getX();
-		    	  double x2 = st[1].location.getX();
-		    	  double x3 = st[2].location.getX();
-		    	  //System.out.println("x1= " + x1 + " x2= " + x2 +" x3= " + x3);
+		      if(st[0] != null && st[1] != null && st[0].location.distanceTo(this.getPosition()) <= schiessenAbAbstand || this.getEnergy() >= ImmerSchiessenAbEnergie){	 
+		    		double m = (double) (st[1].location.getY() - st[0].location.getY()) / (st[1].location.getX() - st[0].location.getX());
+		    				 
+		    		double t = st[0].location.getY() - m * st[0].location.getX();
+		    		
+		    		if(m < Integer.MAX_VALUE && t < Integer.MAX_VALUE && m > Integer.MIN_VALUE && t > Integer.MIN_VALUE){				    				
+		    			  double d = Math.abs(st[0].location.getX() - st[1].location.getX());
+		    			  double dTime = Math.abs(st[0].timestamp - st[1].timestamp);		    			   		    			  
+		    			  double time = distance / this.getProjectileSpeed();		    			  
+		    			  double x = (double) st[0].location.getX() + dTime * (time / dTime) * d;
+		    			  double y = (double) m * x + t;
+		    			  
+		    			  Vector v = new Vector(x, y);
+		    			  Vector scanPos = v.sub(this.getPosition());
+		    			  
+		    			  this.addDebugLine(scanPos, this.getPosition());
+		    			  this.lastTarget = scanPos;
+		    			
+		    			  this.setLaunchProjectileCommand(scanPos.getAngle());
+		    		}
 		    	  
-		    	  double y1 = st[0].location.getY();
-		    	  double y2 = st[1].location.getY();
-		    	  double y3 = st[2].location.getY();
-		    	  //System.out.println("y1= " + y1 + " y2= " + y2 +" y3= " + y3);
-		    	  
-		    	  double a = (double) (x1 * (y2 - y3) + x2 * (y3-y1) + x3 * (y1-y2))
-		    			  				/ 
-		    			  				((x1-x2) * (x1-x3) * (x3-x2)); 	
-		    	  double b = (double) ((x1 * x1) * (y2-y3) + (x2 * x2) * (y3-y1) + (x3 * x3) *(y1-y2))/((x1-x2) * (x1-x3) * (x2-x3));
-		    	  double c = (double) ((x1 * x1) * (x2 * y3-x3 * y2) + x1 * ((x3 * x3) * y2- (x2 * x2) * y3)+x2 * x3 * y1 * (x2-x3))/((x1-x2) * (x1-x3) *(x2-x3));
-		    	  		    	  
-		    	  double d = Math.abs(st[0].location.getX() - st[1].location.getX());
-		    	  double dTime = Math.abs(st[0].timestamp - st[1].timestamp);
-		    	   
-		    	  boolean rechts = true;
-		    	  if(st[1].location.getX() > st[0].location.getX()){
-		    		  rechts = false;
-		    	  }else{
-		    		  rechts = true;
-		    	  }
-		    	  
-		    	  double time = st[0].location.distanceTo(this.getPosition()) / this.getProjectileSpeed();
-		    	  
-		    	  double x = 0;
-		    	  if(rechts == true){
-		    		  x = (double) st[0].location.getX() + dTime * (time / dTime) * d;
-		    	  }else{
-		    		  x = (double) st[0].location.getX() - dTime * (time / dTime) * d;
-		    	  }
-		    	  
-		    	  double y = (double) a * (x * x) + b * x + c;
-		    	  
-		    	  //System.out.println("y " + y + " x= " + x +" d= " + d);
-		    	  
-		    	  Vector v = new Vector(x, y);
-		    	  
-		    	  Vector scanPos = v.sub(this.getPosition());
-		    	  
-		    	  this.lastTarget = v;
-		    	  
-		    	  this.setLaunchProjectileCommand(scanPos.getAngle());
-		    	  
-		    	  areWeFire = true;
+		    	  //areWeFire = true;
 		      }else if(st[0].location.distanceTo(st[1].location) <= 10){
-		    	  
 			      Vector scanPos = st[0].location.sub(this.getPosition());
 		    	
 		    	  this.setLaunchProjectileCommand(scanPos.getAngle());
 		    	  
 		    	  this.lastTarget = null;
 		    	  
-		    	  areWeFire = true;
+		    	  //areWeFire = true;
 		      }
 		      
 		      fireaktuell = 0;
@@ -179,6 +154,7 @@ public class Error404 extends JRobot2015_3 {
 		  fireaktuell++;
 	  }
   }
+  
   private void mustfire(){
 	  if((oldPS == null || oldPS.timeOfScan <= this.getTime() - 20) && this.getEnergy() <= 1.5){
 		  fire = false;
@@ -215,11 +191,12 @@ public class Error404 extends JRobot2015_3 {
   private void Ausweichen(){
 	  if(st[0] != null || (oldPS != null && oldPS2 != null)){		  
 		if(aufDerLinie()){
+			//oldPS.pos ist egal
 			driveCircle(oldPS.pos, 1);
 		}else if(mine()){
-			driveCircle(oldPS.pos);
+			driveCircle(oldPS.pos, 1);
 		}else if(st[0] != null){
-				driveCircle(st[0].location);
+			driveCircle(st[0].location);
 		}else{
 			DriveElse();
 		}
@@ -253,13 +230,20 @@ public class Error404 extends JRobot2015_3 {
 	  }
 	  
 	  if(HabLinie() && aufDerLinie() == false){
-			if(this.getPosition().getY() + 5 < FlugraketeGetY(this.getPosition().getX())){
+			if(this.getPosition().getY() < FlugraketeGetY(this.getPosition().getX())){
 				drive(oldPS.pos.getAngle().sub(new Angle(180 - ok, "d")), DriveSpeed(1));
-			}else if(this.getPosition().getY() + 5	> FlugraketeGetY(this.getPosition().getX())){
+			}else if(this.getPosition().getY() > FlugraketeGetY(this.getPosition().getX())){
 				drive(oldPS.pos.getAngle().add(new Angle(180 - ok, "d")), DriveSpeed(1));
 			}else{
-				driveCircle(st[0].location);
+				drive(a.add(c), DriveSpeed(speed));
 			}
+	  }else if(aufDerLinie()){
+		  if(this.getPosition().getAngle().angle <= a.add(new Angle(5, "d")).angle || this.getPosition().getAngle().angle >= a.sub(new Angle(5, "d")).angle){
+			  drive(a.add(new Angle(10, "d")), DriveSpeed(2));
+		  }else if(this.getPosition().getAngle() != a){
+			  drive(this.getPosition().getAngle(), DriveSpeed(1));
+		  }
+		  
 	  }else{
 		drive(a.add(c), DriveSpeed(speed));
 	  }
@@ -276,16 +260,20 @@ public class Error404 extends JRobot2015_3 {
   }
   private double DriveSpeed(double speed){
 	//int i = (int)((Math.random()) * (maxspeed - minspeed + 1) + minspeed);
-	  //double d = (double) i / 10;
+	 //double d = (double) i / 10;
 	  
-	  if(st[0] != null && oldPS != null){
-		  if((oldPS.pos.distanceTo(this.getPosition()) <= BoosterAbstandRakete || this.getEnergy() >= BoosterAbEnergieBenutzen) && areWeFire == false){			 
+	  if(oldPS != null){
+		  if(oldPS.pos.distanceTo(this.getPosition()) <= BoosterAbstandRakete){// || this.getEnergy() >= BoosterAbEnergieBenutzen){// && areWeFire == false){			 
 			  if(aufDerLinie()){
 				  this.setBoost();
 				  
 				  return 1;
 			  }
 		  }
+	  }else if(speed == 2){
+		  this.setBoost();
+		  
+		  return 1;
 	  }
 	  
 	  if(aufDerLinie()  || zuNah()  || zuWeitWeg()){
@@ -328,11 +316,10 @@ public class Error404 extends JRobot2015_3 {
   private boolean aufDerLinie(){
 	  if(oldPS != null && oldPS2 != null){		 
 		double m = (double) (oldPS2.pos.getY() - oldPS.pos.getY()) / (oldPS2.pos.getX() - oldPS.pos.getX());
-			 
 		double t = oldPS.pos.getY() - m * oldPS.pos.getX();
 			 
 		double y = m * this.getPosition().getX() + t;
-		
+				
 		if(m < Integer.MAX_VALUE && t < Integer.MAX_VALUE && m > Integer.MIN_VALUE && t > Integer.MIN_VALUE){		
 			this.addDebugLine(new Vector(-1000, m*-1000 + t), new Vector(1000, m*1000 + t));
 				 
@@ -340,9 +327,10 @@ public class Error404 extends JRobot2015_3 {
 				return false;
 			}else if(st[0] != null && oldPS.pos.getX() < st[0].location.getX() && oldPS.pos.getX() < this.getPosition().getX() && oldPS.pos.getY() < st[0].location.getY() && oldPS.pos.getY() < this.getPosition().getY()){
 				return false;
-			}else if(y >= this.getPosition().getY() - 9 && y <= this.getPosition().getY() + 9){
+			}else if(this.getPosition().distanceTo(new Vector(this.getPosition().getX(), y)) <= Error404.getJRobotLength() / 2){
 				ChangeColor(Color.red);
-				 return true;
+				
+				return true;
 			}
 		}
 	  }
@@ -350,16 +338,16 @@ public class Error404 extends JRobot2015_3 {
 	  return false;
   }
   private boolean mine(){
-	  if(oldPS != null && oldPS2 != null){
-			if(oldPS2.pos.getY() == oldPS.pos.getY() && oldPS2.pos.getX() == oldPS.pos.getX()){					 
-				if(oldPS2.pos.getY() >= this.getPosition().getY() - 9 && oldPS2.pos.getY() <= this.getPosition().getY() + 9){
-					ChangeColor(Color.orange);
-					return true;
-				}
-			}
-		  }
+	  if(oldPS != null){
+		  int y = 15;
 		  
-		  return false;
+		  if(oldPS.pos.distanceTo(this.getPosition()) <= y){
+				ChangeColor(Color.orange);
+				return true;
+		}
+	 }
+		  
+	  return false;
   }
   private boolean zuNah(){
 	  if(st[0] != null){
